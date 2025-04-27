@@ -2,9 +2,9 @@ import time
 import random
 from PyQt5.QtWidgets import (
     QWidget, QLabel, QPushButton, QTextEdit,
-    QVBoxLayout, QHBoxLayout, QLineEdit, QMessageBox, QGridLayout
+    QVBoxLayout, QHBoxLayout, QLineEdit, QMessageBox, QGridLayout, QScrollArea
 )
-from PyQt5.QtGui import QPainter, QColor, QPixmap
+from PyQt5.QtGui import QPainter, QColor, QPixmap, QFont
 from PyQt5.QtCore import Qt
 from solver import solve_sequential, solve_threaded
 from database import recognize_solution, all_solutions_recognized, reset_solutions, get_stored_data  # Assuming this function exists
@@ -20,62 +20,149 @@ class GameUI(QWidget):
 
     def init_ui(self):
         self.setWindowTitle('Eight Queens Puzzle')
-        self.layout = QVBoxLayout()
+        self.setStyleSheet("background-color: #2b2b2b; color: #e0e0e0;")
+        self.setGeometry(200, 200, 600, 700)
 
+        # Main Layout
+        self.layout = QVBoxLayout()
+        self.layout.setSpacing(20)
+
+        # Instructions Label with enhanced font style
         self.instructions = QLabel('Click to place queens! (one per row)')
+        self.instructions.setStyleSheet("""
+            font-size: 18px; font-weight: bold; color: #e0e0e0;
+            text-align: center; padding: 15px; background-color: #444;
+            border-radius: 8px;
+        """)
         self.layout.addWidget(self.instructions)
 
+        # Name Input with style
         self.name_input = QLineEdit()
         self.name_input.setPlaceholderText('Enter your name')
+        self.name_input.setStyleSheet("""
+            background-color: #444; border: 2px solid #aaa;
+            border-radius: 10px; padding: 10px; font-size: 16px;
+            color: #fff; margin-bottom: 20px;
+        """)
         self.layout.addWidget(self.name_input)
 
+        # Board Grid Layout with visual improvements
         self.board_grid = QGridLayout()
         self.board_buttons = [[QPushButton() for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
         for row in range(BOARD_SIZE):
             for col in range(BOARD_SIZE):
                 btn = self.board_buttons[row][col]
-                btn.setFixedSize(50, 50)
-                btn.setStyleSheet("background-color: white;")
+                btn.setFixedSize(60, 60)
+                # Set alternating colors for chess board pattern
+                is_light_square = (row + col) % 2 == 0
+                base_color = "#F0D9B5" if is_light_square else "#B58863"  # Classic chess colors
+                hover_color = "#BCE784" if is_light_square else "#8EAF6F"  # Green highlight on hover
+                
+                btn.setStyleSheet(f"""
+                    QPushButton {{
+                        background-color: {base_color};
+                        color: #2C3E50;
+                        border: 1px solid #34495E;
+                        border-radius: 0px;
+                        font-size: 24px;
+                        font-weight: bold;
+                    }}
+                    QPushButton:hover {{
+                        background-color: {hover_color};
+                        border: 2px solid #2980B9;
+                    }}
+                    QPushButton:pressed {{
+                        background-color: #E74C3C;
+                        border: 2px solid #C0392B;
+                    }}
+                """)
                 btn.clicked.connect(lambda _, r=row, c=col: self.place_queen(r, c))
                 self.board_grid.addWidget(btn, row, col)
+
         self.layout.addLayout(self.board_grid)
 
+        # Action Buttons Layout (Submit, Solve, etc.)
+        button_style = """
+        QPushButton {
+            background-color: #616161;
+            border: none;
+            color: white;
+            font-size: 16px;
+            border-radius: 10px;
+            padding: 10px;
+        }
+        QPushButton:hover {
+            background-color: #757575;
+        }
+        QPushButton:pressed {
+            background-color: #424242;
+        }
+        """
+
         self.submit_button = QPushButton('Submit Solution')
+        self.submit_button.setStyleSheet(button_style)
         self.submit_button.clicked.connect(self.submit_solution)
-        self.layout.addWidget(self.submit_button)
 
         self.sequential_button = QPushButton('Solve Sequentially')
+        self.sequential_button.setStyleSheet(button_style)
         self.sequential_button.clicked.connect(self.run_sequential)
-        self.layout.addWidget(self.sequential_button)
 
         self.threaded_button = QPushButton('Solve with Threads')
+        self.threaded_button.setStyleSheet(button_style)
         self.threaded_button.clicked.connect(self.run_threaded)
-        self.layout.addWidget(self.threaded_button)
 
         self.auto_solve_button = QPushButton('Auto Solve')
+        self.auto_solve_button.setStyleSheet(button_style)
         self.auto_solve_button.clicked.connect(self.auto_solve)
-        self.layout.addWidget(self.auto_solve_button)
 
         self.compare_button = QPushButton('Compare Algorithms')
+        self.compare_button.setStyleSheet(button_style)
         self.compare_button.clicked.connect(self.compare_algorithms)
-        self.layout.addWidget(self.compare_button)
 
-        # New button to view stored data
         self.view_data_button = QPushButton('View Stored Solutions')
+        self.view_data_button.setStyleSheet(button_style)
         self.view_data_button.clicked.connect(self.view_data)
-        self.layout.addWidget(self.view_data_button)
 
+        self.restart_button = QPushButton('Restart Game')
+        self.restart_button.setStyleSheet(button_style)
+        self.restart_button.clicked.connect(self.restart_game)
+
+        button_layout = QVBoxLayout()
+        button_layout.addWidget(self.submit_button)
+        button_layout.addWidget(self.sequential_button)
+        button_layout.addWidget(self.threaded_button)
+        button_layout.addWidget(self.auto_solve_button)
+        button_layout.addWidget(self.compare_button)
+        button_layout.addWidget(self.view_data_button)
+        button_layout.addWidget(self.restart_button)
+
+        self.layout.addLayout(button_layout)
+
+        # Output Display with a border and padding
         self.output = QTextEdit()
         self.output.setReadOnly(True)
+        self.output.setStyleSheet("""
+            background-color: #444; border-radius: 8px; padding: 15px;
+            font-size: 14px; color: #e0e0e0; border: 2px solid #aaa;
+        """)
         self.layout.addWidget(self.output)
 
-        self.setLayout(self.layout)
+        # Add Scroll Area for better content management
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+
+        container_widget = QWidget()
+        container_widget.setLayout(self.layout)
+        scroll_area.setWidget(container_widget)
+
+        # Set the scroll area as the central layout
+        main_layout = QVBoxLayout()
+        main_layout.addWidget(scroll_area)
+        self.setLayout(main_layout)
 
     def place_queen(self, row, col):
-        # Remove previous queen from this row
         for c in range(BOARD_SIZE):
             self.board_buttons[row][c].setText('')
-        # Set the queen
         self.board_buttons[row][col].setText('♛')
         self.board[row] = col
 
@@ -103,7 +190,16 @@ class GameUI(QWidget):
             formatted = str(self.board)
             success, msg = recognize_solution(formatted, player_name)
             if success:
-                QMessageBox.information(self, "Success", f"Correct! {msg}")
+                win_msg = QMessageBox()
+                win_msg.setIcon(QMessageBox.Information)
+                win_msg.setWindowTitle("🎉 Congratulations! 🎉")
+                win_msg.setText(f"Amazing work, {player_name}!\nYou've successfully solved the Eight Queens Puzzle!")
+                win_msg.setInformativeText("Would you like to play again?")
+                win_msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+                win_msg.setDefaultButton(QMessageBox.Yes)
+                
+                if win_msg.exec_() == QMessageBox.Yes:
+                    self.restart_game()
             else:
                 QMessageBox.warning(self, "Already Recognized", f"{msg}")
 
@@ -126,7 +222,7 @@ class GameUI(QWidget):
             if row == BOARD_SIZE:
                 return True
             cols = list(range(BOARD_SIZE))
-            random.shuffle(cols)  # Shuffle columns for randomness
+            random.shuffle(cols)
             for col in cols:
                 if is_safe(row, col):
                     solution.append(col)
@@ -137,7 +233,6 @@ class GameUI(QWidget):
 
         if solve():
             self.board = solution.copy()
-            # Update UI
             for r in range(BOARD_SIZE):
                 for c in range(BOARD_SIZE):
                     self.board_buttons[r][c].setText('')
@@ -151,19 +246,16 @@ class GameUI(QWidget):
         self.output.append("Comparing algorithms...\n")
         print("Comparing algorithms...")
 
-        # Sequential timing
         start_seq = time.time()
         solve_sequential()
         end_seq = time.time()
         sequential_time = end_seq - start_seq
 
-        # Threaded timing
         start_thr = time.time()
         solve_threaded()
         end_thr = time.time()
         threaded_time = end_thr - start_thr
 
-        # Determine better
         if sequential_time < threaded_time:
             winner = "Sequential"
         else:
@@ -180,7 +272,6 @@ class GameUI(QWidget):
 
     def view_data(self):
         try:
-            # Fetch stored solutions from the database
             stored_data = get_stored_data()  # Assuming this function exists
             if stored_data:
                 data_text = "\n".join([str(solution) for solution in stored_data])
@@ -189,3 +280,13 @@ class GameUI(QWidget):
                 self.output.setText("No stored solutions found.")
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to retrieve data: {str(e)}")
+
+    def restart_game(self):
+        """Reset the game to initial state"""
+        self.board = [-1] * BOARD_SIZE
+        self.name_input.clear()
+        # Clear all queens from the board
+        for row in range(BOARD_SIZE):
+            for col in range(BOARD_SIZE):
+                self.board_buttons[row][col].setText('')
+        self.output.clear()
