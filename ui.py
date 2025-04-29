@@ -136,6 +136,7 @@ class GameUI(QWidget):
         self.restart_button.clicked.connect(self.restart_game)
 
         self.hint_button = QPushButton('Hint')
+        self.restart_button.setStyleSheet(button_style)
         self.hint_button.clicked.connect(self.show_hint)
         self.layout.addWidget(self.hint_button)
 
