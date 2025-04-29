@@ -2,7 +2,8 @@ import time
 import random
 from PyQt5.QtWidgets import (
     QWidget, QLabel, QPushButton, QTextEdit,
-    QVBoxLayout, QHBoxLayout, QLineEdit, QMessageBox, QGridLayout, QScrollArea
+    QVBoxLayout, QHBoxLayout, QLineEdit, QMessageBox, QGridLayout, QScrollArea,
+    QDialog
 )
 import matplotlib.pyplot as plt
 from PyQt5.QtGui import QPainter, QColor, QPixmap, QFont
@@ -288,15 +289,12 @@ class GameUI(QWidget):
         plt.show()
 
     def view_data(self):
+        """Display stored solutions in a popup window"""
         try:
-            stored_data = get_stored_data()  # Assuming this function exists
-            if stored_data:
-                data_text = "\n".join([str(solution) for solution in stored_data])
-                self.output.setText(data_text)
-            else:
-                self.output.setText("No stored solutions found.")
+            dialog = SolutionsDialog(self)
+            dialog.exec_()
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to retrieve data: {str(e)}")
+            QMessageBox.critical(self, "Error", f"Failed to display solutions: {str(e)}")
 
     def restart_game(self):
         """Reset the game to initial state"""
@@ -327,3 +325,84 @@ class GameUI(QWidget):
             if c == col or abs(c - col) == abs(r - row):
                 return False
         return True
+
+
+class SolutionsDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Stored Solutions")
+        self.setModal(True)
+        self.setGeometry(300, 300, 600, 400)
+        self.setStyleSheet("background-color: #2b2b2b; color: #e0e0e0;")
+        
+        layout = QVBoxLayout()
+        
+        # Title
+        title = QLabel("Eight Queens Solutions")
+        title.setStyleSheet("""
+            font-size: 24px;
+            font-weight: bold;
+            color: #e0e0e0;
+            margin: 10px;
+        """)
+        title.setAlignment(Qt.AlignCenter)
+        layout.addWidget(title)
+        
+        # Solutions display
+        self.solutions_text = QTextEdit()
+        self.solutions_text.setReadOnly(True)
+        self.solutions_text.setStyleSheet("""
+            QTextEdit {
+                background-color: #444;
+                border-radius: 8px;
+                padding: 15px;
+                font-size: 14px;
+                color: #e0e0e0;
+                border: 2px solid #aaa;
+            }
+        """)
+        layout.addWidget(self.solutions_text)
+        
+        # Close button
+        close_button = QPushButton("Close")
+        close_button.setStyleSheet("""
+            QPushButton {
+                background-color: #616161;
+                border: none;
+                color: white;
+                font-size: 16px;
+                border-radius: 10px;
+                padding: 10px;
+                min-width: 100px;
+                margin: 10px;
+            }
+            QPushButton:hover {
+                background-color: #757575;
+            }
+            QPushButton:pressed {
+                background-color: #424242;
+            }
+        """)
+        close_button.clicked.connect(self.close)
+        layout.addWidget(close_button, alignment=Qt.AlignCenter)
+        
+        self.setLayout(layout)
+        self.load_solutions()
+    
+    def load_solutions(self):
+        try:
+            solutions = get_stored_solutions()
+            if solutions:
+                text = "=== Stored Solutions ===\n\n"
+                for solution, recognized_by, recognized in solutions:
+                    text += f"Solution: {solution}\n"
+                    if recognized_by:
+                        text += f"Recognized by: {recognized_by}\n"
+                    text += f"Status: {'Recognized' if recognized else 'Not Recognized'}\n"
+                    text += "=" * 40 + "\n\n"
+            else:
+                text = "No stored solutions found."
+            
+            self.solutions_text.setText(text)
+        except Exception as e:
+            self.solutions_text.setText(f"Error loading solutions: {str(e)}")
