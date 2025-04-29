@@ -1,30 +1,42 @@
 import sqlite3
 import os
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 DB_NAME = "eight_queens.db"
 
 def init_db():
+    logger.debug(f"Initializing database: {DB_NAME}")
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
 
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS solutions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            solution TEXT UNIQUE,
-            recognized_by TEXT,
-            recognized INTEGER DEFAULT 0
-        )
-    ''')
+    try:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS solutions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                solution TEXT UNIQUE,
+                recognized_by TEXT,
+                recognized INTEGER DEFAULT 0
+            )
+        ''')
 
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS times (
-            method TEXT PRIMARY KEY,
-            time_taken REAL
-        )
-    ''')
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS times (
+                method TEXT PRIMARY KEY,
+                time_taken REAL
+            )
+        ''')
 
-    conn.commit()
-    conn.close()
+        conn.commit()
+        logger.debug("Database initialized successfully")
+    except sqlite3.Error as e:
+        logger.error(f"Database initialization error: {e}")
+        raise
+    finally:
+        conn.close()
 
 def save_solution(solution):
     conn = sqlite3.connect(DB_NAME)
@@ -92,3 +104,10 @@ def get_stored_data():
         })
     
     return stored_data
+def get_stored_solutions():
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    c.execute("SELECT solution, recognized_by, recognized FROM solutions")
+    rows = c.fetchall()
+    conn.close()
+    return rows

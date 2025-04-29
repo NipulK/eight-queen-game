@@ -1,6 +1,7 @@
 import time
 import threading
 from database import save_solution, record_time
+import matplotlib.pyplot as plt
 
 solutions = []
 

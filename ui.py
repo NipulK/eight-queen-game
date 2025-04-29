@@ -4,11 +4,19 @@ from PyQt5.QtWidgets import (
     QWidget, QLabel, QPushButton, QTextEdit,
     QVBoxLayout, QHBoxLayout, QLineEdit, QMessageBox, QGridLayout, QScrollArea
 )
+import matplotlib.pyplot as plt
 from PyQt5.QtGui import QPainter, QColor, QPixmap, QFont
 from PyQt5.QtCore import Qt
 from solver import solve_sequential, solve_threaded
-from database import recognize_solution, all_solutions_recognized, reset_solutions, get_stored_data  # Assuming this function exists
+from database import (
+    recognize_solution,
+    all_solutions_recognized,
+    reset_solutions,
+    get_stored_data,
+    get_stored_solutions
+)
 from utils import format_solution
+
 
 BOARD_SIZE = 8  # 8x8 board
 
@@ -127,6 +135,11 @@ class GameUI(QWidget):
         self.restart_button.setStyleSheet(button_style)
         self.restart_button.clicked.connect(self.restart_game)
 
+        self.show_solutions_button = QPushButton('Show Stored Solutions')
+        self.show_solutions_button.clicked.connect(self.show_stored_solutions)
+        self.layout.addWidget(self.show_solutions_button)
+
+
         button_layout = QVBoxLayout()
         button_layout.addWidget(self.submit_button)
         button_layout.addWidget(self.sequential_button)
@@ -244,31 +257,35 @@ class GameUI(QWidget):
 
     def compare_algorithms(self):
         self.output.append("Comparing algorithms...\n")
-        print("Comparing algorithms...")
 
+        # Sequential
         start_seq = time.time()
         solve_sequential()
         end_seq = time.time()
         sequential_time = end_seq - start_seq
 
+        # Threaded
         start_thr = time.time()
         solve_threaded()
         end_thr = time.time()
         threaded_time = end_thr - start_thr
 
-        if sequential_time < threaded_time:
-            winner = "Sequential"
-        else:
-            winner = "Threaded"
-
+        # Log result text
         result_text = (
             f"Sequential Time: {sequential_time:.4f} seconds\n"
             f"Threaded Time: {threaded_time:.4f} seconds\n"
-            f"Best Algorithm: {winner} 🎯"
         )
-
         self.output.append(result_text)
-        print(result_text)
+
+        # Show bar chart
+        methods = ['Sequential', 'Threaded']
+        times = [sequential_time, threaded_time]
+
+        plt.figure(figsize=(6, 4))
+        plt.bar(methods, times, color=['skyblue', 'lightgreen'])
+        plt.title("Comparison of Solving Algorithms")
+        plt.ylabel("Time (seconds)")
+        plt.show()
 
     def view_data(self):
         try:
@@ -290,3 +307,31 @@ class GameUI(QWidget):
             for col in range(BOARD_SIZE):
                 self.board_buttons[row][col].setText('')
         self.output.clear()
+    def show_stored_solutions(self):
+        try:
+            solutions = get_stored_solutions()
+            if not solutions:
+                QMessageBox.information(self, "No Solutions", "No solutions stored yet.")
+                return
+
+            popup = QWidget()
+            popup.setWindowTitle("Stored Solutions")
+            layout = QVBoxLayout()
+
+            for sol in solutions:
+                solution_text = sol[0]
+                recognized_by = sol[1] if sol[1] else "N/A"
+                recognized_status = "Yes" if sol[2] == 1 else "No"
+                label = QLabel(f"Solution: {solution_text} | Recognized by: {recognized_by} | Recognized: {recognized_status}")
+                layout.addWidget(label)
+
+            popup.setLayout(layout)
+            popup.setMinimumSize(400, 300)
+            popup.show()
+
+        # Keep reference to popup so it doesn't close immediately
+            self.popup_window = popup
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error", str(e))
+
