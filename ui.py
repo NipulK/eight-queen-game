@@ -135,10 +135,9 @@ class GameUI(QWidget):
         self.restart_button.setStyleSheet(button_style)
         self.restart_button.clicked.connect(self.restart_game)
 
-        self.show_solutions_button = QPushButton('Show Stored Solutions')
-        self.show_solutions_button.clicked.connect(self.show_stored_solutions)
-        self.layout.addWidget(self.show_solutions_button)
-
+        self.hint_button = QPushButton('Hint')
+        self.hint_button.clicked.connect(self.show_hint)
+        self.layout.addWidget(self.hint_button)
 
         button_layout = QVBoxLayout()
         button_layout.addWidget(self.submit_button)
@@ -307,31 +306,23 @@ class GameUI(QWidget):
             for col in range(BOARD_SIZE):
                 self.board_buttons[row][col].setText('')
         self.output.clear()
-    def show_stored_solutions(self):
-        try:
-            solutions = get_stored_solutions()
-            if not solutions:
-                QMessageBox.information(self, "No Solutions", "No solutions stored yet.")
-                return
 
-            popup = QWidget()
-            popup.setWindowTitle("Stored Solutions")
-            layout = QVBoxLayout()
+    def show_hint(self):
+        """Show a hint for the next safe queen placement"""
+        for row in range(BOARD_SIZE):
+            if self.board[row] == -1:
+                for col in range(BOARD_SIZE):
+                    if self.is_safe(row, col):
+                        QMessageBox.information(self, "Hint", 
+                            f"Try placing a queen at row {row + 1}, column {col + 1}.")
+                        return
+                break
+        QMessageBox.warning(self, "Hint", "No safe position found.")
 
-            for sol in solutions:
-                solution_text = sol[0]
-                recognized_by = sol[1] if sol[1] else "N/A"
-                recognized_status = "Yes" if sol[2] == 1 else "No"
-                label = QLabel(f"Solution: {solution_text} | Recognized by: {recognized_by} | Recognized: {recognized_status}")
-                layout.addWidget(label)
-
-            popup.setLayout(layout)
-            popup.setMinimumSize(400, 300)
-            popup.show()
-
-        # Keep reference to popup so it doesn't close immediately
-            self.popup_window = popup
-
-        except Exception as e:
-            QMessageBox.critical(self, "Error", str(e))
-
+    def is_safe(self, row, col):
+        """Check if it's safe to place a queen at the given position"""
+        for r in range(row):
+            c = self.board[r]
+            if c == col or abs(c - col) == abs(r - row):
+                return False
+        return True
