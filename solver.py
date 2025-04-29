@@ -28,6 +28,7 @@ def solve_sequential():
     solve()
     end_time = time.time()
     record_time("sequential", end_time - start_time)
+    return solutions  # Return the solutions list
 
 def solve_threaded():
     global solutions
