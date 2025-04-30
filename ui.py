@@ -259,34 +259,42 @@ class GameUI(QWidget):
     def compare_algorithms(self):
         self.output.append("Comparing algorithms...\n")
 
-        # Sequential
+        # Time the sequential algorithm
         start_seq = time.time()
         solve_sequential()
         end_seq = time.time()
         sequential_time = end_seq - start_seq
 
-        # Threaded
+        #Time the threaded algorithm
         start_thr = time.time()
         solve_threaded()
         end_thr = time.time()
         threaded_time = end_thr - start_thr
 
-        # Log result text
         result_text = (
             f"Sequential Time: {sequential_time:.4f} seconds\n"
             f"Threaded Time: {threaded_time:.4f} seconds\n"
         )
         self.output.append(result_text)
 
-        # Show bar chart
+        # Show comparison chart
         methods = ['Sequential', 'Threaded']
         times = [sequential_time, threaded_time]
 
         plt.figure(figsize=(6, 4))
-        plt.bar(methods, times, color=['skyblue', 'lightgreen'])
+        bars = plt.bar(methods, times, color=['skyblue', 'lightgreen'])
+
+        for bar, time_val in zip(bars, times):
+            yval = bar.get_height()
+            plt.text(bar.get_x() + bar.get_width()/2, yval + 0.01, f'{time_val:.4f}', ha='center')
+
         plt.title("Comparison of Solving Algorithms")
         plt.ylabel("Time (seconds)")
+        plt.xlabel("Method")
+        plt.grid(True, axis='y', linestyle='--', alpha=0.7)
+        plt.tight_layout()
         plt.show()
+
 
     def view_data(self):
         """Display stored solutions in a popup window"""
