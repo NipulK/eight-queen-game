@@ -264,54 +264,55 @@ class GameUI(QWidget):
 
         for i in range(10):
             self.output.append(f"Run {i+1}...\n")
-            
-            # Sequential timing
+
+            # Sequential
             start_seq = time.time()
             solve_sequential()
             end_seq = time.time()
             seq_time = end_seq - start_seq
             sequential_times.append(seq_time)
 
-            # Threaded timing
+            # Threaded
             start_thr = time.time()
             solve_threaded()
             end_thr = time.time()
             thr_time = end_thr - start_thr
             threaded_times.append(thr_time)
 
-        # Average times
+        # Averages
         avg_seq = sum(sequential_times) / 10
         avg_thr = sum(threaded_times) / 10
 
-        # Save to database
         from database import record_time
         record_time("Sequential", avg_seq)
         record_time("Threaded", avg_thr)
 
-        # Display results
-        result_text = (
-            f"\n--- Results over 10 runs ---\n"
+        self.output.append(
+            f"\n--- Results ---\n"
             f"Average Sequential Time: {avg_seq:.4f} seconds\n"
             f"Average Threaded Time: {avg_thr:.4f} seconds\n"
         )
-        self.output.append(result_text)
 
-        # Plot graph
-        methods = ['Sequential', 'Threaded']
-        times = [avg_seq, avg_thr]
+        # Create one figure with two subplots
+        fig, axs = plt.subplots(1, 2, figsize=(12, 5))
 
-        plt.figure(figsize=(6, 4))
-        bars = plt.bar(methods, times, color=['skyblue', 'lightgreen'])
-        for bar, time_val in zip(bars, times):
-            yval = bar.get_height()
-            plt.text(bar.get_x() + bar.get_width()/2, yval + 0.005, f'{time_val:.4f}', ha='center', va='bottom')
+        # Sequential Plot
+        axs[0].plot(range(1, 11), sequential_times, marker='o', color='skyblue')
+        axs[0].set_title("Sequential Algorithm (10 Runs)")
+        axs[0].set_xlabel("Run Number")
+        axs[0].set_ylabel("Time (seconds)")
+        axs[0].grid(True)
 
-        plt.title("Average Time Comparison of Solving Algorithms (10 Runs)")
-        plt.ylabel("Time (seconds)")
-        plt.grid(True, axis='y', linestyle='--', alpha=0.7)
+        # Threaded Plot
+        axs[1].plot(range(1, 11), threaded_times, marker='o', color='lightgreen')
+        axs[1].set_title("Threaded Algorithm (10 Runs)")
+        axs[1].set_xlabel("Run Number")
+        axs[1].set_ylabel("Time (seconds)")
+        axs[1].grid(True)
+
+        # Layout and show
         plt.tight_layout()
         plt.show()
-
 
 
 
