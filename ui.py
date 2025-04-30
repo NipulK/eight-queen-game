@@ -257,43 +257,62 @@ class GameUI(QWidget):
             QMessageBox.warning(self, "Failed", "Could not find a solution.")
 
     def compare_algorithms(self):
-        self.output.append("Comparing algorithms...\n")
+        self.output.append("Comparing algorithms over 10 runs each...\n")
 
-        # Time the sequential algorithm
-        start_seq = time.time()
-        solve_sequential()
-        end_seq = time.time()
-        sequential_time = end_seq - start_seq
+        sequential_times = []
+        threaded_times = []
 
-        #Time the threaded algorithm
-        start_thr = time.time()
-        solve_threaded()
-        end_thr = time.time()
-        threaded_time = end_thr - start_thr
+        for i in range(10):
+            self.output.append(f"Run {i+1}...\n")
+            
+            # Sequential timing
+            start_seq = time.time()
+            solve_sequential()
+            end_seq = time.time()
+            seq_time = end_seq - start_seq
+            sequential_times.append(seq_time)
 
+            # Threaded timing
+            start_thr = time.time()
+            solve_threaded()
+            end_thr = time.time()
+            thr_time = end_thr - start_thr
+            threaded_times.append(thr_time)
+
+        # Average times
+        avg_seq = sum(sequential_times) / 10
+        avg_thr = sum(threaded_times) / 10
+
+        # Save to database
+        from database import record_time
+        record_time("Sequential", avg_seq)
+        record_time("Threaded", avg_thr)
+
+        # Display results
         result_text = (
-            f"Sequential Time: {sequential_time:.4f} seconds\n"
-            f"Threaded Time: {threaded_time:.4f} seconds\n"
+            f"\n--- Results over 10 runs ---\n"
+            f"Average Sequential Time: {avg_seq:.4f} seconds\n"
+            f"Average Threaded Time: {avg_thr:.4f} seconds\n"
         )
         self.output.append(result_text)
 
-        # Show comparison chart
+        # Plot graph
         methods = ['Sequential', 'Threaded']
-        times = [sequential_time, threaded_time]
+        times = [avg_seq, avg_thr]
 
         plt.figure(figsize=(6, 4))
         bars = plt.bar(methods, times, color=['skyblue', 'lightgreen'])
-
         for bar, time_val in zip(bars, times):
             yval = bar.get_height()
-            plt.text(bar.get_x() + bar.get_width()/2, yval + 0.01, f'{time_val:.4f}', ha='center')
+            plt.text(bar.get_x() + bar.get_width()/2, yval + 0.005, f'{time_val:.4f}', ha='center', va='bottom')
 
-        plt.title("Comparison of Solving Algorithms")
+        plt.title("Average Time Comparison of Solving Algorithms (10 Runs)")
         plt.ylabel("Time (seconds)")
-        plt.xlabel("Method")
         plt.grid(True, axis='y', linestyle='--', alpha=0.7)
         plt.tight_layout()
         plt.show()
+
+
 
 
     def view_data(self):
