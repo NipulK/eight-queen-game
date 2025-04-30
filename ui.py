@@ -141,6 +141,7 @@ class GameUI(QWidget):
         self.hint_button.clicked.connect(self.show_hint)
         self.layout.addWidget(self.hint_button)
 
+
         button_layout = QVBoxLayout()
         button_layout.addWidget(self.submit_button)
         button_layout.addWidget(self.sequential_button)

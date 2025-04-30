@@ -2,6 +2,8 @@ import sys
 from PyQt5.QtWidgets import QApplication
 from database import init_db
 from ui import GameUI
+from database import get_stored_solutions
+
 
 def main():
     init_db()
